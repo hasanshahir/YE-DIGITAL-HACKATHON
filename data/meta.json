@@ -1,0 +1,15 @@
+{
+  "W_SAFETY": 0.6,
+  "W_TIME": 0.4,
+  "T_MAX_S": 282.8180533096049,
+  "V_MAX_m_per_s": 27.77777777777778,
+  "K": 4.013910815607283,
+  "TAU_DAYS": 365.0,
+  "reference_date": "2025-09-30",
+  "WOMEN_MULT": 2.5,
+  "SNAP_M": 150.0,
+  "L_MIN_KM": 0.05,
+  "n_nodes": 48089,
+  "n_edges": 133504,
+  "n_incidents_used": 48412
+}
