@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+cache/
+karachi_crime.csv
+data/high_risk_map.html
+data/S_hist.png
