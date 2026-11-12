@@ -1,4 +1,4 @@
-#PathWise
+#**PathWise**
 
 > **A hackathon project built for the YE Digital Hackathon 2026 (Open Innovation Track).**
 
