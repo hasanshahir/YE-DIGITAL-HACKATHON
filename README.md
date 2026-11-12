@@ -58,8 +58,6 @@ frontend/
 
 Run scripts from the repository root so the `data/` paths resolve.
 
-<!-- VERIFY: folder names engine/ and api/ must match what Hasan and Arbish actually pushed. -->
-
 ## Quick start
 
 The generated files in `data/` are committed, so the engine and API run without rebuilding the graph. Start at step 2 unless you are changing the data.
@@ -84,27 +82,32 @@ python pipeline/validate_risk.py
 The engine loads `data/nodes.csv`, `data/edges.csv` and `data/meta.json` into memory and answers routing queries.
 
 ```
-g++ -O2 -std=c++17 -o engine engine/*.cpp
-./engine --help
+g++ -O2 -std=c++17 -o engine/pathwise_engine engine/main.cpp
+engine/pathwise_engine --help
+engine/pathwise_engine --route 4291 37218 --alpha 0.6     # one query, prints the /route JSON
+engine/pathwise_engine --bench                            # 100-pair benchmark
+python engine/verify_engine.py                            # correctness checks
 ```
 
-<!-- VERIFY: build command, file layout and CLI flags are a template. Hasan to correct. -->
+The API does not call the binary per request. `engine/engine_client.py` keeps one `--serve` process running, sends each query over stdin/stdout, and builds the binary automatically if `g++` is available. Details, protocol and integration steps are in [engine/README.md](engine/README.md).
 
 What the engine does:
 
 - **Edge weight at query time:** `W(e) = T(e) * ((1 - alpha) + alpha * S(e))`. In women's mode it uses `S_women` instead of `S`. The `W` column in `edges.csv` is only the default (alpha = 0.60, base S), so the engine must recompute weights for any other alpha or mode.
-- **A\*:** heuristic `h(n) = (1 - alpha) * haversine(n, goal) / (V_MAX * T_MAX_S)`, using `V_MAX_m_per_s` and `T_MAX_S` from `meta.json`. This is admissible, so A* returns the same optimal cost as Dijkstra.
+- **A\*:** heuristic `h(n) = (1 - alpha) * haversine(n, goal) / (V_MAX * T_MAX_S)`, using `V_MAX_m_per_s` and `T_MAX_S` from `meta.json`. At load time the engine checks every edge against this bound; rounding leaves 18 very short edges a hair under it, so the heuristic is scaled by the worst ratio (0.99989). That keeps it consistent, so A* returns the same optimal cost as Dijkstra.
 - **Dijkstra:** the baseline for the benchmark and for correctness checks.
 - **Fastest baseline:** the same search with alpha = 0.
-- **Outputs per query:** the path as node IDs, distance in metres, time in seconds, average S along the path, total cost, plus benchmark numbers (nodes explored and runtime in ms for both algorithms, and whether the costs match).
+- **Outputs per query:** the path (returned as `[[lat, lon], ...]`), distance in metres, time in seconds, average S along the path (length-weighted), total cost, plus benchmark numbers (nodes explored and runtime in ms for both algorithms, and whether the costs match).
 
 Benchmark: run both algorithms on the 100 pairs in `data/od_pairs.csv` (30 short, 40 medium, 30 long by straight-line distance, fixed seed). The pass criterion is 100% cost match. Report the median and mean ratio of nodes explored and of runtime.
 
 | Metric | Result |
 |---|---|
-| Cost match (A* vs Dijkstra) | _to fill in_ |
-| Nodes explored, A* vs Dijkstra (median) | _to fill in_ |
-| Runtime, A* vs Dijkstra (median, ms) | _to fill in_ |
+| Cost match (A* vs Dijkstra) | 100 / 100 (100%) |
+| Nodes explored, A* vs Dijkstra (median) | 7,156 vs 13,390 (A* explores 0.56x, mean 0.57x) |
+| Runtime, A* vs Dijkstra (median, ms) | 1.49 vs 2.42 (A* takes 0.67x, mean 0.70x) |
+
+Measured at alpha = 0.60, general mode, fastest of 5 runs per pair. Runtimes depend on the machine. Cost match is also 100/100 in women's mode and at alpha = 0 and 0.95. Per-pair results are in `data/benchmark_results.csv`, and the per-bucket breakdown is in [engine/README.md](engine/README.md).
 
 ### 3. API (Arbish)
 
