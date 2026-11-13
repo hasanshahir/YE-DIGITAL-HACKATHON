@@ -1,5 +1,6 @@
 # PathWise
-> *LIVE URL** "https://ye-digital-hackathon-frontend.vercel.app/'
+> *LIVE URL** https://ye-digital-hackathon-frontend.vercel.app/
+
 > **A hackathon project built for the YE Digital Hackathon 2026 (Open Innovation Track).**
 
 A safety-aware route planner for Karachi. Instead of returning only the shortest or fastest route, it finds the route with the lowest combined cost of **travel time and exposure to recorded incidents**, and shows it next to the fastest route so the trade-off is visible.
