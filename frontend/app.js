@@ -1,6 +1,6 @@
 /* ---------- CONFIG: change these to match the API ---------- */
 const CONFIG = {
-  API_BASE: "http://localhost:8000",
+ API_BASE: ["localhost", "127.0.0.1"].includes(location.hostname) ? "http://localhost:8000" : "https://ye-digital-hackathon.onrender.com",
   ROUTE_PATH: "/route",
   REPORT_PATH: "/report",
   USE_MOCK_IF_API_DOWN: true,
