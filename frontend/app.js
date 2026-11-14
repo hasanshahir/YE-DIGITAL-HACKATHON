@@ -634,60 +634,38 @@ function drawLine(r, i, sel, bounds){
   animateRouteFill(r.path, color, weight, sel, () => pick(i));
   bounds.extend(L.latLngBounds(r.path));
 
-  const mid = r.path[Math.floor(r.path.length * [.5, .34, .66][i % 3])];
-  const sub = sel ? expo(r.safety)[1] : (r.isFast ? "Fastest" : "Alternative");
-  const cls = sel ? (isFastStyle ? " sel sel-fast" : " sel") : "";
+  // Only display crisp minimal badge for selected route or when 2 main routes exist, avoiding clutter
+  if(sel || routes.length <= 2){
+    const mid = r.path[Math.floor(r.path.length * 0.5)];
+    const iconTag = isFastStyle ? '<svg class="i s" style="color:var(--red)"><use href="#i-zap"/></svg>' : '<svg class="i s g"><use href="#i-shield"/></svg>';
+    const cls = sel ? (isFastStyle ? " sel sel-fast" : " sel") : "";
 
-  const marker = L.marker(mid, {
-    zIndexOffset: sel ? 850 : 500,
-    icon: L.divIcon({
-      className: "",
-      iconSize: [0, 0],
-      html: `<div class="rl${cls}">
-        <div><b>${r.t} min · ${r.safety}% safe</b><small>${sub} · ${r.distance_km.toFixed(1)} km</small></div>
-        <i class="info-i" tabindex="0" role="button" aria-label="Why this route is safer">i</i>
-      </div>`
-    })
-  }).addTo(routeLayer);
+    const marker = L.marker(mid, {
+      zIndexOffset: sel ? 850 : 500,
+      icon: L.divIcon({
+        className: "",
+        iconSize: [0, 0],
+        html: `<div class="rl${cls}">
+          ${iconTag}
+          <div><b>${r.t} min · ${r.safety}%</b></div>
+          <i class="info-i" tabindex="0" role="button" aria-label="Why this route is safer">i</i>
+        </div>`
+      })
+    }).addTo(routeLayer);
 
-  marker.on("click", e => {
-    if(e.originalEvent && e.originalEvent.target.closest(".info-i")) return;
-    pick(i);
-  });
+    marker.on("click", e => {
+      if(e.originalEvent && e.originalEvent.target.closest(".info-i")) return;
+      pick(i);
+    });
 
-  setTimeout(() => {
-    const el = marker.getElement();
-    if(el){
-      const iBtn = el.querySelector(".info-i");
-      if(iBtn) bindInfoIcon(iBtn, i);
-    }
-  }, 30);
-}
-
-function updateMapHud(){
-  const hud = $("mapHud");
-  const r = routes[selected];
-  if(!hud || !r){ if(hud) hud.classList.remove("show"); return; }
-  const isFastStyle = r.isFast && !r.isSafe && routes.length > 1;
-  hud.classList.toggle("fast-hud", isFastStyle);
-  hud.innerHTML = `
-    <div class="hud-head">
-      <div class="hud-title">
-        <span class="hud-dot"></span>
-        <span>${esc(titleOf(r))} · ${r.safety}% Safe</span>
-      </div>
-      <i class="info-i" id="hudInfoIcon" tabindex="0" role="button" aria-label="Hover or tap for route basis">i</i>
-    </div>
-    <div class="hud-text">${r.whySnippet}</div>
-    <div class="hud-foot">
-      <span class="mono">${r.t} min · ${r.distance_km.toFixed(1)} km · S=${r.risk.toFixed(3)}</span>
-      <button type="button" class="hud-more-btn" id="hudMoreLink">More details →</button>
-    </div>
-  `;
-  hud.classList.add("show");
-  bindInfoIcon($("hudInfoIcon"), selected);
-  const more = $("hudMoreLink");
-  if(more) more.onclick = () => openDetailsModal(selected);
+    setTimeout(() => {
+      const el = marker.getElement();
+      if(el){
+        const iBtn = el.querySelector(".info-i");
+        if(iBtn) bindInfoIcon(iBtn, i);
+      }
+    }, 30);
+  }
 }
 
 function render(fit){
@@ -724,33 +702,33 @@ function render(fit){
     const isFastStyle = r.isFast && !r.isSafe && routes.length > 1;
     const [cls, exLabel, chipLabel] = expo(r.safety);
     const dk = r.distance_km - fast.distance_km;
-    const desc = r.via ? "via " + esc(r.via) : i === 0 ? "Best match for your safety settings" : r.isFast ? "Shortest travel time baseline" : "Alternative corridor";
 
     const card = document.createElement("div");
     card.className = "rt" + (sel ? (isFastStyle ? " sel sel-fast" : " sel") : "");
-    card.style.animationDelay = `${i * 55}ms`;
+    card.style.animationDelay = `${i * 45}ms`;
     card.innerHTML = `
       <div class="r1">
         <div class="r1-left">
-          <b>${i === 0 ? '<svg class="i" style="color:var(--g)"><use href="#i-shield"/></svg>' : '<span class="dash"></span>'}${esc(titleOf(r))}</b>
+          <b>${i === 0 ? '<svg class="i s g"><use href="#i-shield"/></svg>' : isFastStyle ? '<svg class="i s" style="color:var(--red)"><use href="#i-zap"/></svg>' : '<span class="dash"></span>'}${esc(titleOf(r))}</b>
           <span class="rk">#${i + 1}</span>
-          <i class="info-i" tabindex="0" role="button" aria-label="Hover or tap to see why this route is safer">i</i>
+          <i class="info-i" tabindex="0" role="button" aria-label="Why this route is safer">i</i>
         </div>
         <span class="time">${r.t} min</span>
       </div>
-      <div class="r2"><span>${desc}</span><span>${r.distance_km.toFixed(1)} km</span></div>
+      <div class="r2">
+        <div class="r2-metrics">
+          <span><svg class="i s"><use href="#i-ruler"/></svg>${r.distance_km.toFixed(1)} km</span>
+          <span><svg class="i s g"><use href="#i-shield"/></svg>${r.safety}% Safe</span>
+          <span class="chipg ${cls}">${chipLabel}</span>
+        </div>
+        <span>${r === fast ? "Fastest" : (dk >= 0 ? "+" : "") + dk.toFixed(1) + " km"}</span>
+      </div>
       <div class="why-box">
         <span>${r.whySnippet}</span>
-        <button type="button" class="why-more-link">More details</button>
-      </div>
-      <div class="r3">
-        <span><span class="chipg ${cls}">${chipLabel}</span>${exLabel} (S = ${r.risk.toFixed(3)})</span>
-        <span>${r === fast ? "Fastest baseline" : (dk >= 0 ? "+" : "") + dk.toFixed(1) + " km vs fastest"}</span>
+        <button type="button" class="why-more-link">Details →</button>
       </div>
       <div class="safe">
-        <span>Safety score</span>
         <div class="bar"><i data-w="${r.safety}%" style="width:0%;background:${barColor(r.safety)}"></i></div>
-        <b>${r.safety}%</b>
       </div>
     `;
 
@@ -771,8 +749,7 @@ function render(fit){
     box.querySelectorAll(".safe .bar i").forEach(bar => { bar.style.width = bar.dataset.w; });
   });
 
-  updateMapHud();
-  if(fit && bounds.isValid()) map.fitBounds(bounds, {paddingTopLeft:[60, 90], paddingBottomRight:[60, 90]});
+  if(fit && bounds.isValid()) map.fitBounds(bounds, {paddingTopLeft:[40, 50], paddingBottomRight:[40, 50]});
 }
 function pick(i){ selected = i; render(false); }
 
