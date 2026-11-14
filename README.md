@@ -1,4 +1,6 @@
-# Safety-Aware Route Planner for Karachi
+# PathWise
+> **Live Prototype:** https://ye-digital-hackathon-frontend.vercel.app/  
+> **Backend API:** https://ye-digital-hackathon.onrender.com
 
 > **A hackathon project built for the YE Digital Hackathon 2026 (Open Innovation Track).**
 
@@ -49,11 +51,17 @@ data/
   od_pairs.csv                 100 fixed origin-destination pairs for the benchmark
   karachi_incidents_clean.csv  cleaned incident data
   validation_results.csv       temporal validation output
+  benchmark_results.csv        100-pair A* vs Dijkstra benchmark output
 pipeline/                      data scripts (Maheen)
-engine/                        C++ routing engine (Hasan)
+engine/                        C++ routing engine & Python bridge (Hasan)
 api/                           FastAPI service (Arbish)
 frontend/
-  index.html                   Leaflet client
+  index.html                   Leaflet client (deployed on Vercel)
+  routes.js                    offline/fallback demo routes
+docs/
+  SUBMISSION.md                hackathon submission & judging documentation
+requirements.txt               API Python dependencies
+.dockerfile                    container setup for API deployment
 ```
 
 Run scripts from the repository root so the `data/` paths resolve.
@@ -111,19 +119,21 @@ Measured at alpha = 0.60, general mode, fastest of 5 runs per pair. Runtimes dep
 
 ### 3. API (Arbish)
 
-A FastAPI service that holds the live edge state, calls the engine for routes, and handles incident reports.
+A FastAPI service that holds the live edge state, calls the C++ engine for routes, and handles incident reports.
 
 ```
-pip install fastapi uvicorn pydantic pandas numpy
-uvicorn api.main:app --reload --port 8000
+pip install -r requirements.txt
+uvicorn api.main:app --port 8000
 ```
 
-<!-- VERIFY: module path, port and dependencies are a template. Arbish to correct. -->
+Run from the repository root with a single worker (live state lives in process memory; avoid `--reload` on Windows so the engine binary is not locked).
 
 Endpoints (the contracts are in the section below):
 
-- **`POST /route`** runs the engine twice, once with the requested safety weight and once with alpha = 0 for the fastest baseline, and returns both plus the benchmark block.
-- **`POST /report`** validates the incident, rejects duplicates, updates the nearest edge's risk and recomputes S, so the next `/route` call sees the change.
+- **`GET /health`** returns service status, graph counts, `K`, live report count, and engine status (`"cpp"`).
+- **`POST /route`** runs the engine with the requested safety weight and with `alpha = 0` for the fastest baseline, and returns both plus the benchmark block.
+- **`POST /report`** validates the incident, rejects duplicates, updates the nearest road's risk (both directions on two-way roads) and recomputes `S` and `S_women`, so the next `/route` call sees the change.
+- **`POST /reset`** restores all live edge risk values back to `data/edges.csv` and clears recent reports.
 
 Live state:
 
@@ -134,13 +144,15 @@ Live state:
 
 ### 4. Frontend
 
-Open `frontend/index.html` in a browser. It needs internet for the map library and tiles. It runs against a mock `/route` by default. To use the real API, set `USE_MOCK = false` and `API_URL` at the top of the script.
+Visit the live deployment at https://ye-digital-hackathon-frontend.vercel.app/ or open `frontend/index.html` locally in a browser (requires internet for Leaflet and OpenStreetMap tiles).
+
+In `frontend/index.html`, `CONFIG.API_BASE` points to the hosted backend (`https://ye-digital-hackathon.onrender.com`) with `USE_MOCK_IF_API_DOWN: true` as a fallback using `frontend/routes.js`. For local testing, set `CONFIG.API_BASE` to `"http://localhost:8000"`.
 
 ### Running the full demo
 
-1. Start the API (step 3).
-2. Set `USE_MOCK = false` in `frontend/index.html`.
-3. Open the page, click an origin and a destination, then try the slider, the women's toggle and an incident report.
+1. Start the API locally (`uvicorn api.main:app --port 8000`) or use the live Render deployment.
+2. Open https://ye-digital-hackathon-frontend.vercel.app/ (or `frontend/index.html` pointed at localhost).
+3. Pick or click an origin and destination in Central Karachi, then test the safety slider, Women's Safety Mode toggle, and live incident reporting.
 
 ## Risk model
 
@@ -176,10 +188,10 @@ response: { "recommended": { "path": [[lat, lon], ...], "distance_m", "time_s", 
 
 ```
 request:  { "lat": 24.918, "lon": 67.097, "crime_type": "Snatching", "severity_num": 4 }
-response: { "status": "accepted", "updated_edges": 1 }
+response: { "status": "accepted", "updated_edges": 2 }
 ```
 
-A report is a duplicate if another report exists within 100 m in the last hour. Otherwise it snaps to the nearest edge within 150 m, and for that edge:
+An optional `"victim_gender": "Female"` field is also accepted and triggers the women's mode multiplier. A report is a duplicate if another report exists within 100 m in the last hour. Otherwise it snaps to the nearest road within 150 m (updating both `u -> v` and `v -> u` on two-way streets, so `updated_edges` is `2` for two-way roads and `1` for one-way roads):
 
 ```
 risk_raw       += s / max(length_m / 1000, 0.05)
@@ -188,7 +200,7 @@ S              = 1 - exp(-risk_raw / K)
 S_women        = 1 - exp(-risk_raw_women / K)
 ```
 
-Because each report snaps to a single edge, `updated_edges` is 1, not the 6 shown in the original blueprint example.
+On two-way roads, both directed edges (`u -> v` and `v -> u`) are updated (`updated_edges` is `2`, or `1` on one-way roads).
 
 ## Graph and data summary
 
