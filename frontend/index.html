@@ -2,11 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PathWise – Plan your route</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PathWise – Safer Routes for Karachi</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script>try{var t=localStorage.getItem("pw-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.dataset.theme=t}catch(e){}</script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -30,88 +29,187 @@
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
   <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
   <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.5h.01"/></symbol>
-  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z"/></symbol>
-  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
 </defs></svg>
 
 <header class="top">
-  <button class="ib" aria-label="Menu"><svg class="i"><use href="#i-menu"/></svg></button>
-  <div class="brand"><span class="logo"><svg class="i"><use href="#i-shield"/></svg></span><b>PathWise</b></div>
-  <div class="loc"><svg class="i"><use href="#i-pin"/></svg><span>Karachi, Pakistan</span><svg class="i s"><use href="#i-chev"/></svg></div>
-  <nav class="tabs"><a class="on" href="#" id="tab-plan">Route planner</a><a href="#" id="tab-guide">Safety guide</a></nav>
-  <button class="ib" id="themeBtn" aria-label="Switch to dark theme"><svg class="i"><use id="themeIco" href="#i-moon"/></svg></button>
-  <button class="ib help" id="helpBtn" aria-label="Open the safety guide"><svg class="i"><use href="#i-help"/></svg></button>
+  <div class="brand">
+    <span class="logo"><svg class="i"><use href="#i-shield"/></svg></span>
+    <div>
+      <b>PathWise</b>
+      <small class="brand-sub">Karachi Safety Router</small>
+    </div>
+  </div>
+  <div class="loc"><svg class="i"><use href="#i-pin"/></svg><span>Central Karachi · 133.5k segments</span></div>
+  <nav class="tabs" aria-label="Primary navigation">
+    <a class="on" href="#" id="tab-plan">Route planner</a>
+    <a href="#" id="tab-guide">Safety guide</a>
+  </nav>
+  <div class="top-right">
+    <div class="api-badge" id="apiBadge" title="Routing engine status">
+      <span class="od" id="apiDot"></span>
+      <span id="demoTxt">Checking engine…</span>
+    </div>
+    <button class="ib help" id="helpBtn" title="Open safety guide" aria-label="Open the safety guide"><svg class="i"><use href="#i-help"/></svg></button>
+  </div>
 </header>
 
 <main>
-<aside class="panel">
-  <div class="plan">
-    <h1>Plan your route</h1>
-    <p class="sub">Choose a safer way through Karachi.</p>
-    <div class="modes">
-      <button class="mode on"><svg class="i"><use href="#i-car"/></svg>Drive</button>
-      <button class="mode" data-soon="Cycling routes are coming soon."><svg class="i"><use href="#i-bike"/></svg>Cycle</button>
-      <button class="mode" data-soon="Walking routes are coming soon."><svg class="i"><use href="#i-walk"/></svg>Walk</button>
-    </div>
-    <div class="stops">
-      <div class="rail"><span class="o"></span><span class="dots"></span><svg class="i g"><use href="#i-pin"/></svg></div>
-      <div class="fields">
-        <div class="field"><input id="in-from" placeholder="Choose starting point" autocomplete="off" aria-label="Start"><div class="sug" id="sug-from"></div></div>
-        <div class="field"><input id="in-to" placeholder="Choose destination" autocomplete="off" aria-label="Destination"><div class="sug" id="sug-to"></div></div>
-      </div>
-      <button class="ib swap" id="swap" aria-label="Swap start and destination"><svg class="i"><use href="#i-swap"/></svg></button>
-    </div>
-    <button class="addstop" data-soon="Multiple stops are coming soon.">+ Add stop</button>
-    <div class="opts">
-      <span class="leave"><svg class="i"><use href="#i-clock"/></svg>Leave now<svg class="i s"><use href="#i-chev"/></svg></span>
-      <button class="optbtn" id="optBtn">Options<svg class="i s"><use href="#i-chev"/></svg></button>
-      <div class="pop" id="optPop">
-        <div class="row"><b>Safety vs speed</b><span id="alphaLabel">Balanced</span></div>
-        <input id="alpha" type="range" min="0" max="0.95" step="0.05" value="0.6" aria-label="Safety versus speed">
-        <div class="ticks"><span>Fastest</span><span>Safest</span></div>
-        <label class="sw"><span>Women's safety mode<small>Extra weight on harassment and snatching risk</small></span><input id="women" type="checkbox"><i></i></label>
-      </div>
-    </div>
+<aside class="panel" id="sidePanel">
+  <div class="sheet-handle" id="sheetHandle">
+    <button type="button" class="sheet-btn" id="sheetToggle" aria-label="Resize route panel">
+      <span class="sheet-bar-pill"></span>
+      <span id="sheetLabel">Resize panel</span>
+    </button>
+    <button type="button" class="sheet-details-btn" id="mobileDetailsBtn">ⓘ Compare all</button>
   </div>
 
-  <div class="listhead"><b>Suggested routes</b><span id="count"></span></div>
-  <div class="routes" id="routes"><p class="empty">Choose a start and destination to see routes.</p></div>
+  <div class="panel-scroll">
+    <div class="plan">
+      <div class="plan-head">
+        <div>
+          <h1>Plan your route</h1>
+          <p class="sub">Balance travel time against historical incident exposure.</p>
+        </div>
+      </div>
+
+      <div class="modes" role="tablist" aria-label="Travel mode">
+        <button class="mode on" type="button"><svg class="i"><use href="#i-car"/></svg>Drive</button>
+        <button class="mode" type="button" data-soon="Two-wheeler routing profile uses Drive network with snatching alerts."><svg class="i"><use href="#i-bike"/></svg>Ride</button>
+        <button class="mode" type="button" data-soon="Walking routes are coming soon."><svg class="i"><use href="#i-walk"/></svg>Walk</button>
+      </div>
+
+      <div class="stops">
+        <div class="rail"><span class="o"></span><span class="dots"></span><svg class="i g"><use href="#i-pin"/></svg></div>
+        <div class="fields">
+          <div class="field" id="field-from">
+            <input id="in-from" placeholder="Choose starting point or tap map" autocomplete="off" aria-label="Start">
+            <button type="button" class="pick-pin-btn" id="pickFromBtn" title="Pick start on map" aria-label="Pick start on map"><svg class="i s"><use href="#i-pin"/></svg></button>
+            <div class="sug" id="sug-from"></div>
+          </div>
+          <div class="field" id="field-to">
+            <input id="in-to" placeholder="Choose destination or tap map" autocomplete="off" aria-label="Destination">
+            <button type="button" class="pick-pin-btn" id="pickToBtn" title="Pick destination on map" aria-label="Pick destination on map"><svg class="i s"><use href="#i-pin"/></svg></button>
+            <div class="sug" id="sug-to"></div>
+          </div>
+        </div>
+        <button class="ib swap" id="swap" type="button" title="Swap start and destination" aria-label="Swap start and destination"><svg class="i"><use href="#i-swap"/></svg></button>
+      </div>
+
+      <div class="presets" id="presetBar" aria-label="Quick Karachi landmarks">
+        <span class="preset-lbl">Quick pick:</span>
+        <button type="button" class="preset-chip" data-lat="24.8443" data-lon="67.0330" data-name="Frere Hall, Saddar">Frere Hall</button>
+        <button type="button" class="preset-chip" data-lat="24.8918" data-lon="67.0745" data-name="Aga Khan Hospital">AKU Hospital</button>
+        <button type="button" class="preset-chip" data-lat="24.8205" data-lon="67.0305" data-name="Clifton Block 5">Clifton</button>
+        <button type="button" class="preset-chip" data-lat="24.8716" data-lon="67.0592" data-name="PECHS Tariq Rd">Tariq Rd</button>
+        <button type="button" class="preset-chip" data-lat="24.9180" data-lon="67.0970" data-name="Gulshan-e-Iqbal">Gulshan</button>
+      </div>
+
+      <!-- Inline Safety Priority & Women's Safety Controls (always accessible + popover option) -->
+      <div class="pref-card">
+        <div class="pref-row">
+          <span class="pref-title"><svg class="i s g"><use href="#i-shield"/></svg><b>Safety vs speed</b></span>
+          <span class="alpha-pill" id="alphaLabel">Balanced · 60% safety</span>
+        </div>
+        <input id="alpha" type="range" min="0" max="0.95" step="0.05" value="0.6" aria-label="Safety versus speed">
+        <div class="split-meter" aria-hidden="true"><div class="split-fill" id="splitFill" style="width:60%"></div></div>
+        <div class="ticks"><span>0% (Fastest)</span><span>60% Default</span><span>95% (Safest)</span></div>
+        <label class="sw">
+          <span>Women's safety mode<small>2.5× severity weight on harassment, snatching &amp; female-victim records</small></span>
+          <input id="women" type="checkbox"><i></i>
+        </label>
+      </div>
+    </div>
+
+    <div class="listhead">
+      <div>
+        <b>Suggested routes</b>
+        <small class="list-sub">Hover or tap <span class="i-mini">i</span> to see why each route is safer</small>
+      </div>
+      <div class="listhead-right">
+        <span id="count"></span>
+        <button type="button" class="more-link-btn" id="openDetailsBtn">More details</button>
+      </div>
+    </div>
+
+    <div class="routes" id="routes"><p class="empty">Choose a start and destination to see routes.</p></div>
+  </div>
 
   <div class="foot">
-    <div class="note"><svg class="i"><use href="#i-info"/></svg><p>Safety ratings are illustrative, not live.<br>Road conditions can change. Stay alert.</p></div>
+    <div class="note"><svg class="i"><use href="#i-info"/></svg><p>Scores reflect historical incident exposure in the dataset, not a real-world safety guarantee. Stay alert.</p></div>
     <div class="cta">
-      <button class="start" id="start" disabled><svg class="i"><use href="#i-arrow"/></svg>Start route</button>
-      <button class="sharebtn" id="share" aria-label="Share route"><svg class="i"><use href="#i-share"/></svg></button>
+      <button class="start" id="start" type="button" disabled><svg class="i"><use href="#i-arrow"/></svg><span id="startTxt">Preview &amp; animate route</span></button>
+      <button class="sharebtn" id="share" type="button" title="Copy route summary" aria-label="Share route"><svg class="i"><use href="#i-share"/></svg></button>
     </div>
   </div>
 </aside>
 
 <section class="mapwrap">
   <div id="map" aria-label="Map of Karachi"></div>
-  <div class="chip layer"><svg class="i"><use href="#i-layers"/></svg>Safety layer<label class="tg"><input id="layerTg" type="checkbox" checked><i></i></label></div>
-  <div class="chip demo"><span class="od"></span><span id="demoTxt">Demo data</span></div>
-  <button class="chip rep" id="repBtn"><svg class="i"><use href="#i-flag"/></svg>Report concern</button>
-  <div class="compass"><small>N</small><svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 3l6 17-6-4-6 4z" fill="#1b2823"/></svg></div>
-  <div class="ctl">
-    <button id="locate" aria-label="My location"><svg class="i"><use href="#i-locate"/></svg></button>
-    <div class="zoom"><button id="zin" aria-label="Zoom in"><svg class="i"><use href="#i-plus"/></svg></button><button id="zout" aria-label="Zoom out"><svg class="i"><use href="#i-minus"/></svg></button></div>
+
+  <div class="map-top-bar">
+    <div class="chip layer"><svg class="i"><use href="#i-layers"/></svg><span>Coverage &amp; reports</span><label class="tg"><input id="layerTg" type="checkbox" checked><i></i></label></div>
+    <button class="chip rep" id="repBtn" type="button"><svg class="i"><use href="#i-flag"/></svg><span>Report concern</span></button>
   </div>
-  <div class="legend"><small>ROUTE COMPARISON</small><div><i class="ln g"></i>Lower exposure</div><div><i class="ln b"></i>Alternative routes</div><em>Safety examples, not a guarantee</em></div>
-  <div class="prev">Route preview · Estimates exclude live traffic</div>
+
+  <!-- On-Screen Floating Route Safety Snippet HUD on Map -->
+  <div class="map-snippet-hud" id="mapHud" aria-live="polite"></div>
+
+  <div class="compass" title="North"><small>N</small><svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 3l6 17-6-4-6 4z"/></svg></div>
+  <div class="ctl">
+    <button id="locate" type="button" title="Use my location" aria-label="My location"><svg class="i"><use href="#i-locate"/></svg></button>
+    <div class="zoom">
+      <button id="zin" type="button" aria-label="Zoom in"><svg class="i"><use href="#i-plus"/></svg></button>
+      <button id="zout" type="button" aria-label="Zoom out"><svg class="i"><use href="#i-minus"/></svg></button>
+    </div>
+  </div>
+
+  <div class="legend">
+    <small>ROUTE EXPOSURE</small>
+    <div><i class="ln g"></i>Safer / lower exposure</div>
+    <div><i class="ln r"></i>Fastest / higher exposure</div>
+    <div><i class="ln b"></i>Alternative corridor</div>
+    <em>Animated from Start (A) → Destination (B)</em>
+  </div>
+
   <div class="banner" id="banner"><span id="bannerTxt"></span><button id="bannerX" type="button">Cancel</button></div>
   <div class="toast" id="toast" role="status"></div>
+
   <div class="modal" id="repModal" role="dialog" aria-label="Report a concern">
-    <div class="mh"><b>Report a concern</b><button class="ib" id="repX" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
-    <label for="crime">What happened?</label><select id="crime"></select>
-    <label>How serious?</label>
-    <div class="seg" id="sev"><button type="button" data-v="1" class="on">Low</button><button type="button" data-v="2">Medium</button><button type="button" data-v="3">High</button><button type="button" data-v="4">Critical</button></div>
+    <div class="mh"><b>Report a road concern</b><button class="ib" id="repX" type="button" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
+    <label for="crime">Incident category</label><select id="crime"></select>
+    <label>Severity level</label>
+    <div class="seg" id="sev">
+      <button type="button" data-v="1" class="on">Low</button>
+      <button type="button" data-v="2">Medium</button>
+      <button type="button" data-v="3">High</button>
+      <button type="button" data-v="4">Critical</button>
+    </div>
     <button class="start" id="pickRep" type="button">Choose location on map</button>
-    <button class="lnk" id="reset" type="button">Reset all reports</button>
+    <button class="lnk" id="reset" type="button">Reset all live reports</button>
   </div>
 </section>
 </main>
+
 <section class="guide" id="guide" aria-label="Safety guide"><div class="gwrap" id="guideBody"></div></section>
+
+<!-- Floating Popover for "i" Hover/Tap Icon -->
+<div class="info-popover" id="infoPopover" role="dialog" aria-label="Why this route is safer"></div>
+
+<!-- Full "More Details" Modal Pop-Up -->
+<div class="details-backdrop" id="detailsModal" role="dialog" aria-modal="true" aria-labelledby="detailsModalTitle">
+  <div class="details-dialog">
+    <div class="details-head">
+      <div>
+        <h3 id="detailsModalTitle">Route Safety Analysis &amp; Scoring Basis</h3>
+        <small id="detailsModalSub">Side-by-side comparison across Central Karachi's 133,504 road segments</small>
+      </div>
+      <button type="button" class="ib details-close" id="detailsClose" aria-label="Close details"><svg class="i"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="details-body" id="detailsBody"></div>
+  </div>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="app.js"></script>
 </body>
