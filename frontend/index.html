@@ -3,559 +3,116 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PathWise – safer routes in Karachi</title>
+<title>PathWise – Plan your route</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<style>
-:root{
-  --bg:#eef3f3;--panel:#ffffff;--ink:#0f2327;--muted:#60767b;--line:#dde7e8;--soft:#f3f8f8;
-  --safe:#0f8b8d;--safe-ink:#ffffff;--fast:#e0475b;--danger:#d1495b;--shadow:0 10px 30px rgba(15,35,39,.14);
-}
-@media (prefers-color-scheme:dark){:root{
-  --bg:#0a1517;--panel:#112024;--ink:#e8f1f2;--muted:#8fa7ac;--line:#223539;--soft:#17292d;
-  --safe:#35c2c4;--safe-ink:#06191b;--fast:#ff7184;--danger:#ff7184;--shadow:0 10px 30px rgba(0,0,0,.5);
-}}
-*{box-sizing:border-box}
-html,body{height:100%;margin:0}
-body{font-family:Figtree,system-ui,sans-serif;background:var(--bg);color:var(--ink);display:flex;font-size:15px}
-button,input,select{font:inherit;color:inherit}
-button{cursor:pointer}
-:focus-visible{outline:3px solid var(--safe);outline-offset:2px}
-
-/* ---------- sidebar ---------- */
-aside{width:392px;max-width:100%;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;z-index:500;overflow:hidden}
-.scroll{flex:1;overflow:auto;padding:22px 22px 12px;display:flex;flex-direction:column;gap:20px}
-.brand{display:flex;align-items:center;gap:12px}
-.logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#0f8b8d,#35c2c4);display:grid;place-items:center;box-shadow:0 6px 16px rgba(15,139,141,.35)}
-.brand h1{margin:0;font-size:1.55rem;font-weight:800;letter-spacing:-.02em;line-height:1}
-.brand small{color:var(--muted);font-weight:500}
-.pill{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:.75rem;font-weight:600;color:var(--muted);background:var(--soft);padding:5px 10px;border-radius:99px}
-.dot{width:8px;height:8px;border-radius:50%;background:#aab;}
-.dot.on{background:#27ae60;box-shadow:0 0 0 3px rgba(39,174,96,.2)}
-.dot.off{background:var(--danger)}
-
-h2{margin:0 0 10px;font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700}
-
-/* trip inputs */
-.trip{position:relative;display:flex;flex-direction:column;gap:10px}
-.trip::before{content:"";position:absolute;left:16px;top:38px;bottom:38px;border-left:2px dotted var(--line)}
-.stop{position:relative;display:flex;align-items:center;gap:10px;background:var(--soft);border:2px solid transparent;border-radius:14px;padding:6px 6px 6px 8px;transition:.15s}
-.stop.active{border-color:var(--safe);background:var(--panel);box-shadow:0 0 0 4px rgba(15,139,141,.12)}
-.badge{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;font-size:.8rem}
-.badge.a{background:var(--safe);color:var(--safe-ink)}
-.badge.b{background:var(--fast);color:#fff}
-.stop input{flex:1;min-width:0;border:0;background:transparent;padding:8px 0;outline:none}
-.stop input::placeholder{color:var(--muted)}
-.icon-btn{flex:none;width:34px;height:34px;border-radius:10px;border:0;background:transparent;display:grid;place-items:center;color:var(--muted)}
-.icon-btn:hover{background:var(--line);color:var(--ink)}
-.icon-btn.sel{background:var(--safe);color:var(--safe-ink)}
-.sug{position:absolute;left:0;right:0;top:100%;margin-top:6px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);z-index:900;overflow:hidden;display:none}
-.sug button{display:block;width:100%;text-align:left;border:0;background:transparent;padding:10px 14px;font-size:.88rem;border-bottom:1px solid var(--line)}
-.sug button:last-child{border-bottom:0}
-.sug button:hover,.sug button:focus{background:var(--soft)}
-.sug .none{padding:10px 14px;color:var(--muted);font-size:.85rem}
-.swap{align-self:flex-end;margin-top:-4px;border:0;background:transparent;color:var(--safe);font-weight:700;font-size:.82rem;padding:4px 6px;border-radius:8px}
-.swap:hover{background:var(--soft)}
-.tip{color:var(--muted);font-size:.82rem;line-height:1.4;margin-top:2px}
-
-/* preference */
-.pref{background:var(--soft);border-radius:14px;padding:14px 16px}
-.pref-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
-.pref-top b{font-size:.95rem}
-#alphaLabel{font-weight:700;color:var(--safe);font-size:.85rem}
-input[type=range]{width:100%;accent-color:var(--safe);margin:6px 0 2px}
-.ticks{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted)}
-.switch{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line);cursor:pointer}
-.switch span small{display:block;color:var(--muted);font-size:.78rem;font-weight:400}
-.switch span{font-weight:600;font-size:.9rem}
-.switch input{position:absolute;opacity:0;pointer-events:none}
-.track{flex:none;width:44px;height:26px;border-radius:99px;background:var(--line);position:relative;transition:.2s}
-.track::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:.2s}
-.switch input:checked + .track{background:var(--safe)}
-.switch input:checked + .track::after{transform:translateX(18px)}
-.switch input:focus-visible + .track{outline:3px solid var(--safe);outline-offset:2px}
-
-/* results */
-.summary{display:flex;gap:12px;align-items:center;background:linear-gradient(135deg,rgba(15,139,141,.14),rgba(53,194,196,.06));border:1px solid rgba(15,139,141,.3);border-radius:14px;padding:14px 16px;margin-bottom:12px}
-.summary .big{font-size:1.7rem;font-weight:800;color:var(--safe);line-height:1}
-.summary p{margin:0;color:var(--muted);font-size:.88rem;line-height:1.35}
-.summary p b{color:var(--ink)}
-.rcard{display:block;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-left:6px solid;border-radius:12px;padding:12px 14px;margin-bottom:10px;transition:.15s}
-.rcard:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
-.rcard .t{display:flex;justify-content:space-between;align-items:center;font-weight:700}
-.rcard .tag{font-size:.7rem;font-weight:700;padding:3px 8px;border-radius:99px;background:var(--soft);color:var(--muted)}
-.rcard .m{display:flex;gap:16px;margin-top:6px;color:var(--muted);font-size:.86rem}
-.rcard .m b{color:var(--ink)}
-
-/* report */
-details{border:1px solid var(--line);border-radius:14px;padding:0 16px}
-summary{cursor:pointer;font-weight:700;padding:14px 0;list-style:none;display:flex;justify-content:space-between;align-items:center}
-summary::-webkit-details-marker{display:none}
-summary::after{content:"+";font-size:1.3rem;color:var(--muted);font-weight:500}
-details[open] summary::after{content:"–"}
-.fld{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
-.fld label{font-size:.82rem;font-weight:600;color:var(--muted)}
-select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel)}
-.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.seg button{border:1px solid var(--line);background:transparent;border-radius:10px;padding:8px 4px;font-size:.8rem;font-weight:600}
-.seg button.on{background:var(--ink);color:var(--panel);border-color:var(--ink)}
-.btn2{width:100%;border:1px solid var(--line);background:var(--soft);border-radius:12px;padding:11px;font-weight:700}
-.btn2:hover{border-color:var(--safe)}
-.btn2.on{background:var(--danger);color:#fff;border-color:var(--danger)}
-.link{border:0;background:none;color:var(--muted);font-size:.82rem;text-decoration:underline;padding:8px 0 14px}
-
-/* footer CTA */
-.cta{padding:14px 22px 18px;border-top:1px solid var(--line);background:var(--panel)}
-.go{width:100%;border:0;border-radius:14px;padding:15px;font-weight:800;font-size:1.02rem;background:var(--safe);color:var(--safe-ink);display:flex;align-items:center;justify-content:center;gap:10px;transition:.15s;box-shadow:0 8px 20px rgba(15,139,141,.3)}
-.go:hover:not(:disabled){filter:brightness(1.06);transform:translateY(-1px)}
-.go:disabled{background:var(--line);color:var(--muted);box-shadow:none;cursor:not-allowed}
-.hint-under{text-align:center;color:var(--muted);font-size:.8rem;margin-top:8px;min-height:1.1em}
-.spin{width:18px;height:18px;border:3px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;display:none}
-.go.busy .spin{display:block}
-@keyframes sp{to{transform:rotate(360deg)}}
-
-/* ---------- map ---------- */
-.mapwrap{flex:1;min-width:0;position:relative;height:100vh;min-height:320px;background:#cfdcdc}
-#map{position:absolute;top:0;right:0;bottom:0;left:0;background:#cfdcdc}
-#map.picking{cursor:crosshair}
-#map.picking .leaflet-grab{cursor:crosshair}
-.banner{position:absolute;z-index:1000;top:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:11px 16px 11px 18px;border-radius:99px;box-shadow:var(--shadow);display:none;align-items:center;gap:12px;font-weight:600;max-width:calc(100% - 32px);font-size:.92rem}
-.banner.show{display:flex}
-.banner.report{background:var(--danger);color:#fff}
-.banner button{border:0;background:rgba(255,255,255,.2);color:inherit;border-radius:99px;padding:4px 12px;font-weight:700;font-size:.8rem}
-.toast{position:absolute;z-index:1000;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--panel);color:var(--ink);border:1px solid var(--line);padding:12px 18px;border-radius:12px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.25s;max-width:calc(100% - 32px);font-weight:500;font-size:.9rem}
-.toast.show{opacity:1;transform:translateX(-50%)}
-.toast.err{border-color:var(--danger)}
-
-.cov-chip{position:absolute;z-index:1000;left:16px;bottom:24px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:9px 14px;display:none;align-items:center;gap:10px;font-weight:700;font-size:.85rem}
-.cov-chip i{width:18px;height:12px;border:2px dashed #0f8b8d;border-radius:3px}
-.cov-chip small{color:var(--muted);font-weight:500;font-size:.75rem;padding-left:10px;border-left:1px solid var(--line)}
-.pin{width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:grid;place-items:center;border:3px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,.35)}
-.pin span{transform:rotate(45deg);color:#fff;font-weight:800;font-size:.9rem}
-.pin.a{background:#0f8b8d}.pin.b{background:#e0475b}
-.leaflet-container{font-family:Figtree,system-ui,sans-serif}
-.dark-map .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9) saturate(.8)}
-
-@media (max-width:820px){
-  body{flex-direction:column-reverse}
-  aside{width:100%;height:56vh;border-right:0;border-top:1px solid var(--line)}
-  .mapwrap{flex:none;height:44vh}
-}
-</style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>try{var t=localStorage.getItem("pw-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<aside>
-  <div class="scroll">
-    <div class="brand">
-      <div class="logo" aria-hidden="true">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>
-      </div>
-      <div><h1>PathWise</h1><small>Safer routes in Karachi</small></div>
-      <div class="pill" id="apiPill" title="Backend status"><span class="dot" id="apiDot"></span><span id="apiTxt">checking</span></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-12a7 7 0 10-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-car" viewBox="0 0 24 24"><path d="M5 11l1.6-4.4A2 2 0 018.5 5.3h7a2 2 0 011.9 1.3L19 11"/><rect x="3" y="11" width="18" height="6" rx="2"/><path d="M6 17v2M18 17v2"/></symbol>
+  <symbol id="i-bike" viewBox="0 0 24 24"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17l4-8h5l3 8M10 9L8.5 6H6.5"/></symbol>
+  <symbol id="i-walk" viewBox="0 0 24 24"><circle cx="13" cy="4.5" r="1.6"/><path d="M12 8l-2.5 4.5 3 3V21M9.5 12.5L7 14.5M12.5 15.5l3 1M12 8l3 2 2.5 1"/></symbol>
+  <symbol id="i-swap" viewBox="0 0 24 24"><path d="M8 20V5M8 5L4.5 8.5M8 5l3.5 3.5M16 4v15M16 19l-3.5-3.5M16 19l3.5-3.5"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M5 12v7h14v-7M12 15V4M8 8l4-4 4 4"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h13l-2 4 2 4H5"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.3a2.5 2.5 0 115 .2c0 1.6-2.5 2-2.5 3.5M12 17h.01"/></symbol>
+  <symbol id="i-locate" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.5h.01"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+</defs></svg>
+
+<header class="top">
+  <button class="ib" aria-label="Menu"><svg class="i"><use href="#i-menu"/></svg></button>
+  <div class="brand"><span class="logo"><svg class="i"><use href="#i-shield"/></svg></span><b>PathWise</b></div>
+  <div class="loc"><svg class="i"><use href="#i-pin"/></svg><span>Karachi, Pakistan</span><svg class="i s"><use href="#i-chev"/></svg></div>
+  <nav class="tabs"><a class="on" href="#" id="tab-plan">Route planner</a><a href="#" id="tab-guide">Safety guide</a></nav>
+  <button class="ib" id="themeBtn" aria-label="Switch to dark theme"><svg class="i"><use id="themeIco" href="#i-moon"/></svg></button>
+  <button class="ib help" id="helpBtn" aria-label="Open the safety guide"><svg class="i"><use href="#i-help"/></svg></button>
+</header>
+
+<main>
+<aside class="panel">
+  <div class="plan">
+    <h1>Plan your route</h1>
+    <p class="sub">Choose a safer way through Karachi.</p>
+    <div class="modes">
+      <button class="mode on"><svg class="i"><use href="#i-car"/></svg>Drive</button>
+      <button class="mode" data-soon="Cycling routes are coming soon."><svg class="i"><use href="#i-bike"/></svg>Cycle</button>
+      <button class="mode" data-soon="Walking routes are coming soon."><svg class="i"><use href="#i-walk"/></svg>Walk</button>
     </div>
-
-    <section>
-      <h2>Your trip</h2>
-      <div class="trip">
-        <div class="stop active" id="stop-from">
-          <span class="badge a">A</span>
-          <input id="in-from" placeholder="Search a place, or tap the map" autocomplete="off" aria-label="Start location">
-          <button class="icon-btn" id="locate" title="Use my location" aria-label="Use my location">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg>
-          </button>
-          <button class="icon-btn" id="pick-from" title="Pick on map" aria-label="Pick start on map">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-12a7 7 0 10-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
-          </button>
-          <div class="sug" id="sug-from"></div>
-        </div>
-        <div class="stop" id="stop-to">
-          <span class="badge b">B</span>
-          <input id="in-to" placeholder="Where to?" autocomplete="off" aria-label="Destination">
-          <button class="icon-btn" id="pick-to" title="Pick on map" aria-label="Pick destination on map">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-12a7 7 0 10-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
-          </button>
-          <div class="sug" id="sug-to"></div>
-        </div>
+    <div class="stops">
+      <div class="rail"><span class="o"></span><span class="dots"></span><svg class="i g"><use href="#i-pin"/></svg></div>
+      <div class="fields">
+        <div class="field"><input id="in-from" placeholder="Choose starting point" autocomplete="off" aria-label="Start"><div class="sug" id="sug-from"></div></div>
+        <div class="field"><input id="in-to" placeholder="Choose destination" autocomplete="off" aria-label="Destination"><div class="sug" id="sug-to"></div></div>
       </div>
-      <button class="swap" id="swap" type="button">⇅ Swap A and B</button>
-      <p class="tip">Tip: you can drag the pins on the map to fine-tune your start and destination.</p>
-    </section>
-
-    <section>
-      <h2>Route preference</h2>
-      <div class="pref">
-        <div class="pref-top"><b>Safety vs speed</b><span id="alphaLabel">Balanced</span></div>
+      <button class="ib swap" id="swap" aria-label="Swap start and destination"><svg class="i"><use href="#i-swap"/></svg></button>
+    </div>
+    <button class="addstop" data-soon="Multiple stops are coming soon.">+ Add stop</button>
+    <div class="opts">
+      <span class="leave"><svg class="i"><use href="#i-clock"/></svg>Leave now<svg class="i s"><use href="#i-chev"/></svg></span>
+      <button class="optbtn" id="optBtn">Options<svg class="i s"><use href="#i-chev"/></svg></button>
+      <div class="pop" id="optPop">
+        <div class="row"><b>Safety vs speed</b><span id="alphaLabel">Balanced</span></div>
         <input id="alpha" type="range" min="0" max="0.95" step="0.05" value="0.6" aria-label="Safety versus speed">
         <div class="ticks"><span>Fastest</span><span>Safest</span></div>
-        <label class="switch">
-          <span>Women's safety mode<small>Avoids areas with higher harassment risk</small></span>
-          <input id="women" type="checkbox"><i class="track"></i>
-        </label>
+        <label class="sw"><span>Women's safety mode<small>Extra weight on harassment and snatching risk</small></span><input id="women" type="checkbox"><i></i></label>
       </div>
-    </section>
-
-    <section id="resultsSec" style="display:none">
-      <h2>Your routes</h2>
-      <div id="results"></div>
-    </section>
-
-    <details id="repBox">
-      <summary>Report an incident</summary>
-      <div class="fld"><label for="crime">What happened?</label><select id="crime"></select></div>
-      <div class="fld"><label>How serious?</label>
-        <div class="seg" id="sev">
-          <button type="button" data-v="1" class="on">Low</button>
-          <button type="button" data-v="2">Medium</button>
-          <button type="button" data-v="3">High</button>
-          <button type="button" data-v="4">Critical</button>
-        </div>
-      </div>
-      <button class="btn2" id="pick-rep" type="button">📍 Choose location on map</button>
-      <button class="link" id="reset" type="button">Reset all reports</button>
-    </details>
+    </div>
   </div>
 
-  <div class="cta">
-    <button class="go" id="go" disabled><span class="spin"></span><span id="goTxt">Find routes</span></button>
-    <div class="hint-under" id="goHint">Set a start and destination first</div>
+  <div class="listhead"><b>Suggested routes</b><span id="count"></span></div>
+  <div class="routes" id="routes"><p class="empty">Choose a start and destination to see routes.</p></div>
+
+  <div class="foot">
+    <div class="note"><svg class="i"><use href="#i-info"/></svg><p>Safety ratings are illustrative, not live.<br>Road conditions can change. Stay alert.</p></div>
+    <div class="cta">
+      <button class="start" id="start" disabled><svg class="i"><use href="#i-arrow"/></svg>Start route</button>
+      <button class="sharebtn" id="share" aria-label="Share route"><svg class="i"><use href="#i-share"/></svg></button>
+    </div>
   </div>
 </aside>
 
-<div class="mapwrap">
+<section class="mapwrap">
   <div id="map" aria-label="Map of Karachi"></div>
+  <div class="chip layer"><svg class="i"><use href="#i-layers"/></svg>Safety layer<label class="tg"><input id="layerTg" type="checkbox" checked><i></i></label></div>
+  <div class="chip demo"><span class="od"></span><span id="demoTxt">Demo data</span></div>
+  <button class="chip rep" id="repBtn"><svg class="i"><use href="#i-flag"/></svg>Report concern</button>
+  <div class="compass"><small>N</small><svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 3l6 17-6-4-6 4z" fill="#1b2823"/></svg></div>
+  <div class="ctl">
+    <button id="locate" aria-label="My location"><svg class="i"><use href="#i-locate"/></svg></button>
+    <div class="zoom"><button id="zin" aria-label="Zoom in"><svg class="i"><use href="#i-plus"/></svg></button><button id="zout" aria-label="Zoom out"><svg class="i"><use href="#i-minus"/></svg></button></div>
+  </div>
+  <div class="legend"><small>ROUTE COMPARISON</small><div><i class="ln g"></i>Lower exposure</div><div><i class="ln b"></i>Alternative routes</div><em>Safety examples, not a guarantee</em></div>
+  <div class="prev">Route preview · Estimates exclude live traffic</div>
   <div class="banner" id="banner"><span id="bannerTxt"></span><button id="bannerX" type="button">Cancel</button></div>
-  <div class="cov-chip" id="covChip"><i></i><span id="covName"></span><small>Shaded area is not covered</small></div>
   <div class="toast" id="toast" role="status"></div>
-</div>
-
+  <div class="modal" id="repModal" role="dialog" aria-label="Report a concern">
+    <div class="mh"><b>Report a concern</b><button class="ib" id="repX" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
+    <label for="crime">What happened?</label><select id="crime"></select>
+    <label>How serious?</label>
+    <div class="seg" id="sev"><button type="button" data-v="1" class="on">Low</button><button type="button" data-v="2">Medium</button><button type="button" data-v="3">High</button><button type="button" data-v="4">Critical</button></div>
+    <button class="start" id="pickRep" type="button">Choose location on map</button>
+    <button class="lnk" id="reset" type="button">Reset all reports</button>
+  </div>
+</section>
+</main>
+<section class="guide" id="guide" aria-label="Safety guide"><div class="gwrap" id="guideBody"></div></section>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-/* ---------- CONFIG: change these to match the API ---------- */
-const CONFIG = {
-  API_BASE: "http://localhost:8000",
-  ROUTE_PATH: "/route",
-  REPORT_PATH: "/report",
-  USE_MOCK_IF_API_DOWN: true,
-  /* Area the road graph covers. Fill this in, or expose GET /bounds on the API.
-     Format: {south:24.80, west:66.95, north:24.95, east:67.12}  (null = unknown) */
-  COVERAGE: null,
-  COVERAGE_NAME: "Central Karachi",
-  SNAP_M: 500
-};
-const CRIME_TYPES = ["Motorbike Snatching","Mobile Phone Snatching","Cash Snatching","Car Snatching",
-  "Street Robbery","Motorbike Theft","Car Theft","House Burglary","Pickpocketing","Shop Theft",
-  "Armed Assault","Extortion","Murder","Kidnapping for Ransom","Harassment"];
-
-const $ = id => document.getElementById(id);
-const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-CRIME_TYPES.forEach(c => $("crime").add(new Option(c, c)));
-
-/* ---------- response adapter ---------- */
-function fixPath(p){
-  if(!Array.isArray(p) || !p.length || !Array.isArray(p[0])) return p;
-  return p[0][0] > 40 ? p.map(([x,y]) => [y,x]) : p;   // [lon,lat] -> [lat,lon]
-}
-function pickRoute(r){
-  if(!r) return null;
-  const path = fixPath(r.path || r.coordinates || (r.geometry && r.geometry.coordinates) || r.polyline);
-  const km = Number(r.distance_km ?? (r.distance_m != null ? r.distance_m/1000 : r.length_km ?? 0)) || 0;
-  const risk = Number(r.risk ?? r.avg_risk ?? r.total_risk ?? r.S ?? r.safety_score ?? 0) || 0;
-  return path ? {path, distance_km:km, risk} : null;
-}
-function parseRoutes(d){
-  console.log("route response:", d);
-  return { fast: pickRoute(d.fastest), safe: pickRoute(d.recommended) };
-}
-
-/* ---------- map ---------- */
-const dark = matchMedia("(prefers-color-scheme: dark)").matches;
-const map = L.map("map", {zoomControl:false}).setView([24.8607, 67.0011], 12);
-L.control.zoom({position:"bottomright"}).addTo(map);
-L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-  {maxZoom:19, attribution:"&copy; OpenStreetMap contributors"}).addTo(map);
-if(dark) document.body.classList.add("dark-map");
-window.addEventListener("load", () => { map.invalidateSize(); setTimeout(() => map.invalidateSize(), 300); });
-
-let mode = "from", from = null, to = null, sev = 1, routed = false;
-const routeLayer = L.layerGroup().addTo(map);
-const reportLayer = L.layerGroup().addTo(map);
-const pins = {};
-
-/* ---------- coverage area ---------- */
-let coverage = null, covLayer = null;
-function normBounds(d){
-  if(!d) return null;
-  if(Array.isArray(d) && d.length === 4) d = {south:d[0], west:d[1], north:d[2], east:d[3]};
-  const b = {
-    south: d.south ?? d.min_lat ?? d.lat_min ?? d.minLat, west: d.west ?? d.min_lon ?? d.lon_min ?? d.minLon,
-    north: d.north ?? d.max_lat ?? d.lat_max ?? d.maxLat, east: d.east ?? d.max_lon ?? d.lon_max ?? d.maxLon};
-  return Object.values(b).every(v => typeof v === "number") ? b : null;
-}
-function drawCoverage(b, fit){
-  coverage = b;
-  if(covLayer) map.removeLayer(covLayer);
-  const world = [[-85,-180],[-85,180],[85,180],[85,-180]];
-  const hole = [[b.south,b.west],[b.south,b.east],[b.north,b.east],[b.north,b.west]];
-  const shade = L.polygon([world, hole], {stroke:false, fillColor:"#0f2327", fillOpacity:.38, interactive:false});
-  const edge = L.rectangle([[b.south,b.west],[b.north,b.east]], {color:"#0f8b8d", weight:3, dashArray:"10 8", fill:false, interactive:false});
-  covLayer = L.layerGroup([shade, edge]).addTo(map);
-  $("covChip").style.display = "flex";
-  $("covName").textContent = CONFIG.COVERAGE_NAME + " coverage";
-  if(fit) map.fitBounds([[b.south,b.west],[b.north,b.east]], {padding:[30,30]});
-}
-function inCoverage(ll){
-  if(!coverage) return true;                       // unknown: let the server decide
-  const pad = CONFIG.SNAP_M / 111000;              // allow clicks within snap distance of the edge
-  return ll.lat >= coverage.south - pad && ll.lat <= coverage.north + pad &&
-         ll.lng >= coverage.west - pad && ll.lng <= coverage.east + pad;
-}
-const OUTSIDE_MSG = () => `That spot is outside the ${CONFIG.COVERAGE_NAME} area PathWise covers. Pick a place inside the dashed outline.`;
-async function loadCoverage(){
-  if(CONFIG.COVERAGE){ const b = normBounds(CONFIG.COVERAGE); if(b){ drawCoverage(b, true); return; } }
-  for(const p of ["/bounds", "/coverage"]){
-    try{
-      const r = await fetch(CONFIG.API_BASE + p);
-      if(!r.ok) continue;
-      const b = normBounds(await r.json());
-      if(b){ drawCoverage(b, true); return; }
-    }catch(_){}
-  }
-  console.info("PathWise: coverage bounds unknown. Set CONFIG.COVERAGE or add GET /bounds to the API.");
-}
-
-/* ---------- ui helpers ---------- */
-let toastT;
-function toast(msg, err){
-  const t = $("toast"); t.textContent = msg; t.classList.toggle("err", !!err); t.classList.add("show");
-  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 4200);
-}
-const HINTS = {from:"Tap the map to set your start (A)", to:"Now tap the map to set your destination (B)", rep:"Tap the spot where it happened"};
-function setMode(m){
-  mode = m;
-  $("stop-from").classList.toggle("active", m === "from");
-  $("stop-to").classList.toggle("active", m === "to");
-  $("pick-from").classList.toggle("sel", m === "from");
-  $("pick-to").classList.toggle("sel", m === "to");
-  $("pick-rep").classList.toggle("on", m === "rep");
-  $("pick-rep").textContent = m === "rep" ? "Tap the map now…" : "📍 Choose location on map";
-  $("map").classList.toggle("picking", !!m);
-  const b = $("banner");
-  b.classList.toggle("show", !!m);
-  b.classList.toggle("report", m === "rep");
-  $("bannerTxt").textContent = HINTS[m] || "";
-}
-$("bannerX").onclick = () => setMode(null);
-$("pick-from").onclick = () => setMode(mode === "from" ? null : "from");
-$("pick-to").onclick = () => setMode(mode === "to" ? null : "to");
-$("pick-rep").onclick = () => setMode(mode === "rep" ? null : "rep");
-document.addEventListener("keydown", e => { if(e.key === "Escape") setMode(null); });
-
-function updateGo(){
-  const ok = !!(from && to);
-  $("go").disabled = !ok;
-  $("goHint").textContent = ok ? "" : (!from && !to ? "Set a start and destination first" : !from ? "Still need a start (A)" : "Still need a destination (B)");
-}
-
-function pinIcon(k){
-  return L.divIcon({className:"", html:`<div class="pin ${k === "from" ? "a" : "b"}"><span>${k === "from" ? "A" : "B"}</span></div>`,
-    iconSize:[34,34], iconAnchor:[17,41]});
-}
-function setPoint(key, ll, label, opts = {}){
-  ll = L.latLng(ll);
-  if(!inCoverage(ll)){
-    toast(OUTSIDE_MSG(), true);
-    if(opts.fromDrag && pins[key]){ pins[key].setLatLng(key === "from" ? from : to); }   // snap the pin back
-    return;
-  }
-  if(key === "from") from = ll; else to = ll;
-  if(!opts.fromDrag){
-    if(pins[key]) map.removeLayer(pins[key]);
-    pins[key] = L.marker(ll, {icon:pinIcon(key), draggable:true, keyboard:false}).addTo(map);
-    pins[key].on("dragend", () => {
-      setPoint(key, pins[key].getLatLng(), null, {fromDrag:true});
-      if(routed && from && to) findRoutes();
-    });
-  }
-  $("in-" + key).value = label || `Dropped pin (${ll.lat.toFixed(4)}, ${ll.lng.toFixed(4)})`;
-  updateGo();
-  if(opts.keepMode) return;
-  if(key === "from") setMode(to ? null : "to"); else setMode(from ? null : "from");
-}
-
-map.on("click", e => {
-  if(mode === "from") setPoint("from", e.latlng);
-  else if(mode === "to") setPoint("to", e.latlng);
-  else if(mode === "rep") sendReport(e.latlng);
-});
-
-$("swap").onclick = () => {
-  if(!from && !to) return toast("Set your points first");
-  const a = from, b = to, ta = $("in-from").value, tb = $("in-to").value;
-  from = to = null;
-  if(b) setPoint("from", b, tb, {keepMode:true}); else { if(pins.from) map.removeLayer(pins.from); delete pins.from; $("in-from").value = ""; }
-  if(a) setPoint("to", a, ta, {keepMode:true}); else { if(pins.to) map.removeLayer(pins.to); delete pins.to; $("in-to").value = ""; }
-  updateGo();
-  if(routed && from && to) findRoutes();
-};
-
-$("locate").onclick = () => {
-  if(!navigator.geolocation) return toast("Your browser can't share location", true);
-  toast("Finding your location…");
-  navigator.geolocation.getCurrentPosition(
-    p => { setPoint("from", [p.coords.latitude, p.coords.longitude], "My location"); map.setView([p.coords.latitude, p.coords.longitude], 15); },
-    () => toast("Couldn't get your location. Tap the map instead.", true),
-    {enableHighAccuracy:true, timeout:8000});
-};
-
-/* ---------- place search (OpenStreetMap Nominatim) ---------- */
-function attachSearch(key){
-  const inp = $("in-" + key), box = $("sug-" + key);
-  let t, last = "";
-  const close = () => box.style.display = "none";
-  async function run(){
-    const q = inp.value.trim();
-    if(q.length < 3 || q === last) return;
-    last = q;
-    box.style.display = "block"; box.innerHTML = '<div class="none">Searching…</div>';
-    try{
-      const u = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=pk&bounded=1" +
-        "&viewbox=66.65,25.55,67.65,24.6&q=" + encodeURIComponent(q + " Karachi");
-      const res = await (await fetch(u, {headers:{Accept:"application/json"}})).json();
-      box.innerHTML = "";
-      if(!res.length){ box.innerHTML = '<div class="none">No matches. Try another name or tap the map.</div>'; return; }
-      res.forEach(r => {
-        const b = document.createElement("button"); b.type = "button";
-        const name = r.display_name.split(",").slice(0, 3).join(",");
-        b.textContent = name;
-        b.onclick = () => { setPoint(key, [+r.lat, +r.lon], name); map.setView([+r.lat, +r.lon], 15); close(); };
-        box.appendChild(b);
-      });
-    }catch(_){ box.innerHTML = '<div class="none">Search unavailable. Tap the map instead.</div>'; }
-  }
-  inp.addEventListener("input", () => { clearTimeout(t); t = setTimeout(run, 450); });
-  inp.addEventListener("keydown", e => { if(e.key === "Enter"){ e.preventDefault(); const f = box.querySelector("button"); if(f) f.click(); else run(); } });
-  inp.addEventListener("focus", () => { setMode(key); inp.select(); });
-  document.addEventListener("click", e => { if(!e.target.closest("#stop-" + key)) close(); });
-}
-attachSearch("from"); attachSearch("to");
-
-/* ---------- safety slider ---------- */
-function alphaText(v){ return v < .2 ? "Fastest" : v < .45 ? "Mostly fast" : v < .7 ? "Balanced" : v < .9 ? "Mostly safe" : "Safest"; }
-$("alpha").oninput = () => $("alphaLabel").textContent = alphaText(+$("alpha").value);
-$("alpha").onchange = () => { if(routed && from && to) findRoutes(); };
-$("women").onchange = () => { if(routed && from && to) findRoutes(); };
-$("alphaLabel").textContent = alphaText(+$("alpha").value);
-
-/* ---------- severity buttons ---------- */
-$("sev").querySelectorAll("button").forEach(b => b.onclick = () => {
-  sev = +b.dataset.v;
-  $("sev").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
-});
-
-/* ---------- API ---------- */
-async function post(path, body){
-  const r = await fetch(CONFIG.API_BASE + path, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
-  if(!r.ok){
-    let d = ""; try{ d = (await r.json()).detail; }catch(_){}
-    const e = new Error(typeof d === "string" && d ? d : "API returned " + r.status);
-    e.fromApi = true; throw e;
-  }
-  return r.json();
-}
-async function ping(){
-  try{ await fetch(CONFIG.API_BASE + "/docs", {mode:"no-cors"}); $("apiDot").className = "dot on"; $("apiTxt").textContent = "API online"; }
-  catch(_){ $("apiDot").className = "dot off"; $("apiTxt").textContent = "API offline"; }
-}
-ping(); setInterval(ping, 10000);
-
-async function sendReport(ll){
-  if(!inCoverage(ll)) return toast(OUTSIDE_MSG(), true);
-  try{
-    const r = await post(CONFIG.REPORT_PATH, {lat:ll.lat, lon:ll.lng, crime_type:$("crime").value, severity_num:sev});
-    const msg = {accepted:"Report added. Find routes again to see the effect.",
-      duplicate:"Someone already reported here in the last hour.",
-      rejected:"No road within 150 m of that point. Click closer to a road."}[r.status] || r.status;
-    toast(msg, r.status !== "accepted");
-    if(r.status === "accepted"){
-      L.circleMarker(ll, {radius:8, color:"#fff", weight:2, fillColor:"#d1495b", fillOpacity:1})
-        .bindTooltip("Reported: " + $("crime").value).addTo(reportLayer);
-      setMode(null);
-      if(routed && from && to) findRoutes();
-    }
-  }catch(err){ toast("Could not send the report: " + err.message, true); }
-}
-
-$("reset").onclick = async () => {
-  try{ await post("/reset", {}); reportLayer.clearLayers(); toast("Reports cleared. Risk is back to the original data."); if(routed && from && to) findRoutes(); }
-  catch(err){ toast("Could not reset: " + err.message, true); }
-};
-
-async function findRoutes(){
-  setMode(null);
-  $("go").classList.add("busy"); $("go").disabled = true; $("goTxt").textContent = "Finding routes…";
-  const body = {origin:[from.lat, from.lng], destination:[to.lat, to.lng],
-    safety_weight:+$("alpha").value, womens_mode:$("women").checked};
-  let routes;
-  try{
-    routes = parseRoutes(await post(CONFIG.ROUTE_PATH, body));
-    if(!routes.fast && !routes.safe) throw Object.assign(new Error("The API returned no routes for those points."), {fromApi:true});
-  }catch(err){
-    if(err.fromApi || !CONFIG.USE_MOCK_IF_API_DOWN){
-      toast(err.fromApi ? err.message : "Could not reach the API: " + err.message, true);
-      $("go").classList.remove("busy"); $("goTxt").textContent = "Find routes"; updateGo(); return;
-    }
-    routes = mockRoutes(from, to);
-    toast("API not reachable. Showing sample routes.", true);
-  }
-  draw(routes); routed = true;
-  $("go").classList.remove("busy"); $("goTxt").textContent = "Update routes"; updateGo();
-}
-$("go").onclick = findRoutes;
-
-/* ---------- drawing ---------- */
-function draw({fast, safe}){
-  routeLayer.clearLayers(); $("results").innerHTML = ""; $("resultsSec").style.display = "block";
-  const items = [["Fastest route", fast, css("--fast"), "8 10", "Quickest"], ["Safer route", safe, css("--safe"), null, "Recommended"]];
-  const bounds = L.latLngBounds([]), lines = [];
-  items.forEach(([name, r, color, dash, tag]) => {
-    if(!r) return;
-    const casing = L.polyline(r.path, {color:"#fff", weight:10, opacity:.9}).addTo(routeLayer);
-    const line = L.polyline(r.path, {color, weight:6, opacity:1, dashArray:dash, lineCap:"round"}).addTo(routeLayer);
-    bounds.extend(line.getBounds());
-    const card = document.createElement("button");
-    card.type = "button"; card.className = "rcard"; card.style.borderLeftColor = color;
-    card.innerHTML = `<div class="t"><span>${name}</span><span class="tag">${tag}</span></div>
-      <div class="m"><span><b>${r.distance_km.toFixed(1)} km</b></span><span>Risk score <b>${r.risk.toFixed(1)}</b></span></div>`;
-    card.onclick = () => map.fitBounds(line.getBounds(), {padding:[60,60]});
-    $("results").appendChild(card);
-    lines.push(line);
-  });
-  if(fast && safe){
-    let html;
-    if(fast.risk > 0 && safe.risk < fast.risk){
-      const pct = Math.round((1 - safe.risk / fast.risk) * 100);
-      const extra = safe.distance_km - fast.distance_km;
-      html = `<div class="big">${pct}%</div><p><b>less risk</b> on the safer route${extra > 0.05 ? ` for just <b>${extra.toFixed(1)} km</b> more.` : " with no extra distance."}</p>`;
-    }else{
-      html = `<div class="big">✓</div><p><b>Both routes carry similar risk.</b> The fastest route is a good choice here.</p>`;
-    }
-    $("results").insertAdjacentHTML("afterbegin", `<div class="summary">${html}</div>`);
-  }
-  if(bounds.isValid()) map.fitBounds(bounds, {padding:[70,70]});
-  $("resultsSec").scrollIntoView({behavior:"smooth", block:"nearest"});
-}
-
-/* ---------- sample data so the UI works if the API is down ---------- */
-function mockRoutes(a, b){
-  const mid = (t, off) => [a.lat + (b.lat-a.lat)*t + off*(b.lng-a.lng), a.lng + (b.lng-a.lng)*t - off*(b.lat-a.lat)];
-  const mk = off => [[a.lat,a.lng], mid(.33,off), mid(.66,off), [b.lat,b.lng]];
-  const km = pts => pts.slice(1).reduce((s,p,i)=>s+map.distance(pts[i],p),0)/1000;
-  const f = mk(0), s = mk(.12);
-  return {fast:{path:f, distance_km:km(f), risk:10}, safe:{path:s, distance_km:km(s)*1.08, risk:6}};
-}
-
-setMode("from"); updateGo(); loadCoverage();
-</script>
-  <script src="routes.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
