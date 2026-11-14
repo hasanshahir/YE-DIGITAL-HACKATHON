@@ -2,10 +2,11 @@
 PathWise API  (Arbish's lane)  -  v0.5
 
 Endpoints
-  GET  /health   status, node/edge counts, engine status
-  POST /route    validate -> snap to nodes -> C++ engine (Hasan) -> frozen response shape
-  POST /report   validate -> dedup -> snap to a road -> live rescoring of that road
-  POST /reset    restore the CSV risk values and forget recent reports
+  GET  /health        status, node/edge counts, engine status
+  POST /route         validate -> snap to nodes -> C++ engine (Hasan) -> frozen response shape
+  POST /report        validate -> dedup -> snap to a road -> live rescoring of that road
+  POST /reset         restore the CSV risk values and forget recent reports
+  GET  /safety-guide  static safety guide (api/safety_guide.py)
 
 Run from the REPO ROOT, single worker (live state lives in this process):
     uvicorn api.main:app --port 8000
@@ -30,6 +31,8 @@ from scipy.spatial import cKDTree
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:      # so `import engine.engine_client` works
     sys.path.insert(0, str(REPO_ROOT))
+
+from api.safety_guide import router as safety_guide_router  # noqa: E402  (needs REPO_ROOT on sys.path)
 
 # =============================================================================
 # CONFIG  (everything you may need to change lives here)
@@ -304,6 +307,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(safety_guide_router)     # GET /safety-guide and /safety-guide/{section_id}
 
 
 @app.get("/health")
