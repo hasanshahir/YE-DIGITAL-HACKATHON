@@ -6,3 +6,5 @@ data/high_risk_map.html
 data/S_hist.png
 engine/pathwise_engine
 engine/pathwise_engine.exe
+.vercel/
+frontend/.vercel/

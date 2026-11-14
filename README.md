@@ -1,5 +1,6 @@
 # PathWise
-> **Live Prototype:** https://ye-digital-hackathon-frontend.vercel.app/  
+> **Live Prototype (Latest UI):** https://pathwise-karachi.vercel.app  
+> **Live Prototype (Mirror):** https://ye-digital-hackathon-frontend.vercel.app/  
 > **Backend API:** https://ye-digital-hackathon.onrender.com
 
 > **A hackathon project built for the YE Digital Hackathon 2026 (Open Innovation Track).**

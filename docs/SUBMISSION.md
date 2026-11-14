@@ -1,7 +1,8 @@
 # PathWise — YE Digital Hackathon 2026 Submission & Pitch Guide
 
 **Track:** Open Innovation Track  
-**Live Prototype (Vercel):** https://ye-digital-hackathon-frontend.vercel.app/  
+**Live Prototype (Latest UI — Vercel):** https://pathwise-karachi.vercel.app  
+**Live Prototype (Mirror — Vercel):** https://ye-digital-hackathon-frontend.vercel.app/  
 **Live Backend API (Render):** https://ye-digital-hackathon.onrender.com  
 **Repository:** https://github.com/hasanshahir/YE-DIGITAL-HACKATHON  
 
@@ -61,7 +62,7 @@ Kaggle Crime CSV + OpenStreetMap Roads
 
 ## 5. Submission Portal Checklist (YE Digital Hackathon 2026)
 
-- [x] **Prototype URL:** `https://ye-digital-hackathon-frontend.vercel.app/`
+- [x] **Prototype URL:** `https://pathwise-karachi.vercel.app` (and `https://ye-digital-hackathon-frontend.vercel.app/`)
 - [x] **Backend Health Check:** `https://ye-digital-hackathon.onrender.com/health` (`"engine": "cpp"`)
 - [x] **Supporting Documentation:** `README.md` and `docs/SUBMISSION.md`
 - [ ] **Pitch Deck:** Uploaded by Maheen — **team to do a 5-minute final review** before submission lock.
